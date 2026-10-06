@@ -1,0 +1,4 @@
+model,AUC,EER,TAR@FAR=0.1,TAR@FAR=0.01,threshold,rank1_acc,correct_accept,stranger_rejection,ms_per_image
+Facenet512,0.995,0.063,1.0,0.917,0.508,1.0,1.0,0.857,550.083
+ArcFace,1.0,0.0,1.0,1.0,0.342,1.0,1.0,1.0,404.545
+VGG-Face,0.998,0.004,1.0,1.0,0.343,1.0,1.0,1.0,766.007

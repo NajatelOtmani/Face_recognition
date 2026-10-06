@@ -1,0 +1,11 @@
+# Lower bounds. After everything works on your PC, replace them with exact
+# versions by running:  pip freeze > requirements.txt   (this is what "pinned" means)
+deepface>=0.0.93
+tf-keras
+tensorflow>=2.15
+opencv-python-headless
+numpy
+pandas
+scikit-learn
+matplotlib
+streamlit

@@ -1,0 +1,7 @@
+{
+  "model": "ArcFace",
+  "detector": "yunet",
+  "threshold": 0.342,
+  "target_far": 0.01,
+  "ms_per_image": 404.545
+}
