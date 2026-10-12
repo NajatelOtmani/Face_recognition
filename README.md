@@ -1,6 +1,6 @@
 # Face Recognition Pipeline
 
-Identify people in a photo (or say "Unknown") using face embeddings, cosine similarity and a tuned threshold. Demo in Streamlit, benchmark in a notebook.
+Identify people in a photo (or say "Unknown") using face embeddings, cosine similarity and a tuned threshold. Demo in Streamlit: https://facerecognition-twdu8vbiiepbvt22q5ynqf.streamlit.app/, benchmark in a notebook.
 
 ## 1. The idea in 5 lines
 1. **Detect** each face in the image and crop it.
