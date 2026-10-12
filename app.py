@@ -255,7 +255,7 @@ with c1:
     now = datetime.now().strftime("%I:%M %p  •  %a, %b %d")
     st.markdown(H(f"""
     <div class="hero">
-      <div class="hi">Hi! {USER}</div>
+      <div class="hi">Hi! </div>
       <div class="sub">Face access control</div>
       <div class="when">{now}</div>
       <div class="tiles">
