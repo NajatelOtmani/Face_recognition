@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 import streamlit as st
 
-from src.recognizer import load_gallery, identify
+from src.recognizer import load_gallery, identify, embed, _normalize
 
 st.set_page_config(page_title="FaceID Console", page_icon="🧬", layout="wide")
 
@@ -40,6 +40,8 @@ section[data-testid=stSidebar] *{color:#26345a}
 [data-testid=stFileUploader] button{background:#fff!important;border:1px solid #d3def3!important;border-radius:10px!important}
 [data-testid=stSlider] [role=slider]{background:#4a78c8!important;box-shadow:0 4px 10px rgba(74,120,200,.5)!important}
 [data-testid=stSliderThumbValue]{color:#4a78c8!important;font-weight:600}
+[data-testid=stExpander]{background:#fff;border:1px solid #d3def3!important;border-radius:16px!important;margin-top:18px}
+[data-testid=stTextInput] input{border-radius:10px!important}
 
 /* cards */
 .card,.st-key-scan{background:linear-gradient(180deg,#fff,#f5f8ff);border-radius:28px;padding:22px;box-shadow:0 1px 2px rgba(30,60,120,.06),0 14px 28px -10px rgba(30,60,120,.16),0 36px 64px -24px rgba(30,60,120,.26),inset 0 1px 0 #fff}
@@ -162,17 +164,25 @@ def av(name, ok):
     return f'<div class="av" style="background:{bg}">{name[:1].upper()}</div>'
 
 
+@st.cache_resource
+def _base_gallery():
+    try:
+        return load_gallery()
+    except FileNotFoundError:
+        return np.empty((0, 512), dtype=np.float32), np.array([], dtype=str)
+
+
 # ───────────────────────────── state & sidebar ─────────────────────────────
 S = st.session_state
 for k, v in (("scans", 0), ("rec", 0), ("unk", 0), ("log", []), ("last", None)):
     S.setdefault(k, v)
 
-try:
-    gallery = st.cache_resource(load_gallery)()
-except FileNotFoundError:
-    st.error("gallery.npz not found. Run build_gallery('dataset') first.")
-    st.stop()
-enrolled = len(set(map(str, gallery[1])))
+if "gallery" not in S:
+    _embs, _labels = _base_gallery()
+    S.gallery = (np.array(_embs), np.array(_labels))
+
+gallery = S.gallery
+enrolled = len(set(map(str, gallery[1]))) if len(gallery[1]) > 0 else 0
 
 with st.sidebar:
     st.markdown(H("""<div class="brand"><div class="logo">🧬</div>
@@ -186,8 +196,30 @@ with st.sidebar:
                 '<div class="sh">Higher is stricter: fewer wrong matches, more missed ones.</div>',
                 unsafe_allow_html=True)
     thr = st.slider("Threshold", 0.30, 0.95, 0.342, 0.001, format="%.3f", label_visibility="collapsed")
-    st.markdown(f'<div class="chips"><span>Facenet512</span><span>Cosine</span><span>{enrolled} identities</span></div>',
+    st.markdown(f'<div class="chips"><span>ArcFace</span><span>Cosine</span><span>{enrolled} identities</span></div>',
                 unsafe_allow_html=True)
+
+    with st.expander("➕ Enroll new identity"):
+        st.markdown('<div class="sh">Adds a face to this session\'s gallery. '
+                    'Enroll the same name with several photos for better matching.</div>',
+                    unsafe_allow_html=True)
+        new_name = st.text_input("Name", key="enroll_name")
+        new_file = st.file_uploader("Reference photo", type=["jpg", "jpeg", "png"], key="enroll_file")
+        if st.button("Add to gallery", disabled=not (new_name.strip() and new_file)):
+            try:
+                ref = cv2.imdecode(np.frombuffer(new_file.getvalue(), np.uint8), cv2.IMREAD_COLOR)
+                # Use recognizer's deepface pipeline safely
+                rep = DeepFace.represent(img_path=ref, model_name="ArcFace", detector_backend="yunet", enforce_detection=True)[0]
+                v = _normalize(rep["embedding"])
+                embs, labels = S.gallery
+                if len(embs) == 0:
+                    S.gallery = (v[None], np.array([new_name.strip()]))
+                else:
+                    S.gallery = (np.vstack([embs, v[None]]), np.append(labels, new_name.strip()))
+                st.toast(f"Enrolled {new_name.strip()}", icon="✅")
+                st.rerun()
+            except Exception as e:
+                st.error(f"No usable face found: {e}")
 
 img, res = None, []
 if file:
@@ -293,5 +325,3 @@ with b2:
     st.markdown(f'<div class="card low"><div class="cardt">Faces in this photo</div>{rows}'
                 f'<div class="cap" style="color:#7d8cae">The dark tick marks the match threshold.</div></div>',
                 unsafe_allow_html=True)
-
-# run with:  streamlit run app.py
