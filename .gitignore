@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+gallery.npz
+audit_logs.db
+data/
+results/
+.env
