@@ -4,8 +4,9 @@ from datetime import datetime
 import cv2
 import numpy as np
 import streamlit as st
+from deepface import DeepFace
 
-from src.recognizer import load_gallery, identify, embed, _normalize
+from src.recognizer import load_gallery, identify
 
 st.set_page_config(page_title="FaceID Console", page_icon="🧬", layout="wide")
 
@@ -208,9 +209,15 @@ with st.sidebar:
         if st.button("Add to gallery", disabled=not (new_name.strip() and new_file)):
             try:
                 ref = cv2.imdecode(np.frombuffer(new_file.getvalue(), np.uint8), cv2.IMREAD_COLOR)
-                # Use recognizer's deepface pipeline safely
-                rep = DeepFace.represent(img_path=ref, model_name="ArcFace", detector_backend="yunet", enforce_detection=True)[0]
-                v = _normalize(rep["embedding"])
+                rep = DeepFace.represent(
+                    img_path=ref, 
+                    model_name="ArcFace", 
+                    detector_backend="yunet", 
+                    enforce_detection=True
+                )[0]
+                v = np.array(rep["embedding"], dtype=np.float32)
+                v = v / np.linalg.norm(v)
+                
                 embs, labels = S.gallery
                 if len(embs) == 0:
                     S.gallery = (v[None], np.array([new_name.strip()]))
