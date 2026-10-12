@@ -165,17 +165,22 @@ def av(name, ok):
 
 
 def embed(img_bgr):
-    """Facenet512 embedding, L2-normalized. Must match how build_gallery() makes embeddings."""
+    """ArcFace embedding with YuNet detector, L2-normalized. Must match recognizer.py."""
     from deepface import DeepFace
-    rep = DeepFace.represent(img_path=img_bgr, model_name="Facenet512", enforce_detection=True)
-    v = np.array(rep[0]["embedding"], dtype=np.float32)
-    return v / np.linalg.norm(v)
-
-
+    rep = DeepFace.represent(
+        img_path=img_bgr,
+        model_name="ArcFace",
+        detector_backend="yunet",
+        enforce_detection=True
+    )
+    return _normalize(rep[0]["embedding"])
 @st.cache_resource
 def _base_gallery():
-    return load_gallery()
-
+    try:
+        return load_gallery()
+    except FileNotFoundError:
+        # Return empty template if gallery.npz hasn't been built yet
+        return np.empty((0, 512), dtype=np.float32), np.array([], dtype=str)
 
 # ───────────────────────────── state & sidebar ─────────────────────────────
 S = st.session_state
